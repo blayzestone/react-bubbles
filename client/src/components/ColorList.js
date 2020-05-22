@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useForm } from "../hooks/useForm";
 import { axiosWithAuth } from "../utils/axiosWithAuth";
 
 const initialColor = {
@@ -9,6 +10,7 @@ const initialColor = {
 const ColorList = ({ colors, updateColors, fetchingNewData }) => {
   const [editing, setEditing] = useState(false);
   const [colorToEdit, setColorToEdit] = useState(initialColor);
+  const [newColorValues, setNewColorValues] = useForm(initialColor);
 
   const editColor = (color) => {
     setEditing(true);
@@ -39,6 +41,29 @@ const ColorList = ({ colors, updateColors, fetchingNewData }) => {
         updateColors(filteredColors);
       })
       .catch((err) => console.log(err));
+  };
+
+  const createColor = (evt) => {
+    evt.preventDefault();
+
+    axiosWithAuth()
+      .post("/colors", newColorValues)
+      .then((res) => updateColors(res.data))
+      .catch((err) => console.log(err));
+  };
+
+  const newColorChangeHandler = (evt) => {
+    const { name, value } = evt.target;
+    const values = {
+      target: {
+        name,
+        value:
+          name === "code" // structure this value in the correct format to submit it in a post request
+            ? { hex: evt.target.value }
+            : value,
+      },
+    };
+    setNewColorValues(values);
   };
 
   return (
@@ -96,8 +121,34 @@ const ColorList = ({ colors, updateColors, fetchingNewData }) => {
           </div>
         </form>
       )}
-      <div className="spacer" />
       {/* stretch - build another form here to add a color */}
+      {!editing && (
+        <form onSubmit={createColor}>
+          <legend>Add color</legend>
+          <label>
+            color name:
+            <input
+              onChange={newColorChangeHandler}
+              type="text"
+              name="color"
+              value={newColorValues.color}
+            />
+          </label>
+          <label>
+            hex code:
+            <input
+              onChange={newColorChangeHandler}
+              type="text"
+              name="code"
+              value={newColorValues.code.hex}
+            />
+          </label>
+          <div className="button-row">
+            <button type="submit">save</button>
+          </div>
+        </form>
+      )}
+      <div className="spacer" />
     </div>
   );
 };
